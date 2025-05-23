@@ -477,3 +477,9 @@ def refresh_data():
 def export_csv():
     """API endpoint to export data
 (Content truncated due to size limit. Use line ranges to read in chunks) """
+    @app.route("/cron-update")
+def cron_update():
+    from update_checker import check_for_updates, download_updates
+    check_for_updates()
+    download_updates()
+    return "✅ Data updated from RBI!"
