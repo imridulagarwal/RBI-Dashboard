@@ -475,5 +475,5 @@ def refresh_data():
 
 @app.route('/api/export_csv')
 def export_csv():
-    """API endpoint to export data 
-(Content truncated due to size limit. Use line ranges to read in chunks)
+    """API endpoint to export data
+(Content truncated due to size limit. Use line ranges to read in chunks) """
