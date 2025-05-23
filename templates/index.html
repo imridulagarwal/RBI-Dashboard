@@ -5,7 +5,33 @@
     <title>RBI Dashboard</title>
 </head>
 <body style="font-family:Arial;padding:40px">
-    <h1>✅ RBI Dashboard Deployed Successfully</h1>
-    <p>This is a placeholder index.html. Replace it with your real dashboard UI.</p>
+  <h2>ATM / POS / Card Trends</h2>
+<canvas id="trendChart"></canvas>
+
+<label for="bank">Filter by Bank:</label>
+<select id="bankDropdown"></select>
+
+<button onclick="location.href='/download-latest'">📥 Download CSV</button>
+<button onclick="location.href='/cron-update'">🔁 Refresh Data</button>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch("/api/card-data").then(res => res.json()).then(data => {
+  const labels = data.map(row => row.Month);
+  const cc = data.map(row => row['Credit Cards']);
+  const dc = data.map(row => row['Debit Cards']);
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Credit Cards', data: cc },
+        { label: 'Debit Cards', data: dc }
+      ]
+    }
+  });
+});
+</script>
+
 </body>
 </html>
