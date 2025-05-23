@@ -1,0 +1,5 @@
+services:
+  - type: web
+    name: rbi-dashboard
+    runtime: docker
+    plan: free
