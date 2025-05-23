@@ -1,37 +1,310 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>RBI Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RBI ATM/POS/Card Statistics Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body style="font-family:Arial;padding:40px">
-  <h2>ATM / POS / Card Trends</h2>
-<canvas id="trendChart"></canvas>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-credit-card me-2"></i>
+                RBI Card Statistics Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#overview">Overview</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#credit-cards">Credit Cards</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#debit-cards">Debit Cards</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#comparison">Comparison</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#growth-analysis">Growth Analysis</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <div id="update-status" class="me-3 text-light">
+                        <small>Last updated: <span id="last-updated-time">{{ last_updated }}</span></small>
+                    </div>
+                    <button id="check-updates-btn" class="btn btn-outline-light btn-sm me-2">
+                        <i class="fas fa-sync-alt me-1"></i> Check for Updates
+                    </button>
+                    <button id="refresh-data-btn" class="btn btn-light btn-sm">
+                        <i class="fas fa-redo me-1"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-<label for="bank">Filter by Bank:</label>
-<select id="bankDropdown"></select>
+    <div class="container-fluid mt-4">
+        <!-- Global Filters -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Filters</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="bank-type-filter" class="form-label">Bank Type</label>
+                                <select id="bank-type-filter" class="form-select">
+                                    <option value="All">All Bank Types</option>
+                                    {% for bank_type in bank_types %}
+                                    <option value="{{ bank_type }}">{{ bank_type }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="bank-filter" class="form-label">Bank</label>
+                                <select id="bank-filter" class="form-select">
+                                    <option value="All">All Banks</option>
+                                    <!-- Banks will be populated via JavaScript -->
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="month-filter" class="form-label">Month</label>
+                                <select id="month-filter" class="form-select">
+                                    <option value="All">All Months</option>
+                                    {% for month in months %}
+                                    <option value="{{ month }}">{{ month }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<button onclick="location.href='/download-latest'">📥 Download CSV</button>
-<button onclick="location.href='/cron-update'">🔁 Refresh Data</button>
+        <!-- Notification Area -->
+        <div id="notification-area" class="row mb-4" style="display: none;">
+            <div class="col-md-12">
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span id="notification-message"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-fetch("/api/card-data").then(res => res.json()).then(data => {
-  const labels = data.map(row => row.Month);
-  const cc = data.map(row => row['Credit Cards']);
-  const dc = data.map(row => row['Debit Cards']);
-  new Chart(document.getElementById('trendChart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Credit Cards', data: cc },
-        { label: 'Debit Cards', data: dc }
-      ]
-    }
-  });
-});
-</script>
+        <!-- Overview Section -->
+        <section id="overview" class="mb-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">Overview</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">Total Cards Issued (Latest Month)</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="card bg-primary text-white">
+                                                        <div class="card-body text-center">
+                                                            <h3 id="total-credit-cards">Loading...</h3>
+                                                            <p class="mb-0">Credit Cards</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card bg-success text-white">
+                                                        <div class="card-body text-center">
+                                                            <h3 id="total-debit-cards">Loading...</h3>
+                                                            <p class="mb-0">Debit Cards</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">Card Distribution</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="card-distribution-chart" height="200"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-</body>
-</html>
+        <!-- Credit Cards Section -->
+        <section id="credit-cards" class="mb-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">Credit Cards</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="card mb-3">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">Credit Card Trend</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="credit-card-trend-chart" height="300"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">Top 10 Banks by Credit Cards</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Bank</th>
+                                                            <th>Credit Cards</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="top-credit-card-banks">
+                                                        <tr>
+                                                            <td colspan="2" class="text-center">Loading...</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Debit Cards Section -->
+        <section id="debit-cards" class="mb-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0">Debit Cards</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="card mb-3">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">Debit Card Trend</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="debit-card-trend-chart" height="300"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">Top 10 Banks by Debit Cards</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Bank</th>
+                                                            <th>Debit Cards</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="top-debit-card-banks">
+                                                        <tr>
+                                                            <td colspan="2" class="text-center">Loading...</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Section -->
+        <section id="comparison" class="mb-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0">Credit vs Debit Card Comparison</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <h5 class="mb-0">Monthly Comparison</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="comparison-chart" height="300"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Growth Analysis Section -->
+        <section id="growth-analysis" class="mb-5">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h4 class="mb-0">Month-on-Month Growth Analysis</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card mb-3"
+(Content truncated due to size limit. Use line ranges to read in chunks)
