@@ -138,7 +138,7 @@ def process_and_store_excel_files():
     """Process Excel files and store data in the database"""
     try:
         # Initialize parser
-        parser = RBIExcelParser(excel_dir=EXCEL_DIR)
+        parser = RBIExcelParser(file_path=excel_file_path)
         
         # Process all files
         all_data = parser.process_all_files()
