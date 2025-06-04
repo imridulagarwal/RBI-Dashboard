@@ -1,8 +1,8 @@
 import pandas as pd
 
 class RBIExcelParser:
-    def __init__(self, file_path):
-        self.file_path = file_path
+    def __init__(self, excel_dir):
+        self.excel_dir = excel_dir
 
     def parse(self):
         # Step 1: Load the Excel with no header
