@@ -4,6 +4,18 @@ class RBIExcelParser:
     def __init__(self, excel_dir):
         self.excel_dir = excel_dir
 
+    def process_all_files(self):
+        all_data = []
+        for file_name in os.listdir(self.excel_dir):
+            if file_name.endswith(".xlsx"):
+                file_path = os.path.join(self.excel_dir, file_name)
+                try:
+                    df = self.parse_excel(file_path)
+                    all_data.append(df)
+                except Exception as e:
+                    print(f"❌ Error parsing {file_name}: {e}")
+        return all_data
+        
     def parse(self):
         # Step 1: Load the Excel with no header
         df_raw = pd.read_excel(self.file_path, header=None)
