@@ -1,3 +1,4 @@
+
 import os
 import sys
 import json
@@ -34,15 +35,15 @@ def init_db():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        cursor.execute('''
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS banks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             bank_name TEXT NOT NULL,
             bank_type TEXT NOT NULL,
             UNIQUE(bank_name)
-        )''')
+        )""")
 
-        cursor.execute('''
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS monthly_stats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             bank_id INTEGER NOT NULL,
@@ -52,16 +53,16 @@ def init_db():
             debit_cards INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (bank_id) REFERENCES banks(id),
             UNIQUE(bank_id, month)
-        )''')
+        )""")
 
-        cursor.execute('''
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS updates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             check_time TIMESTAMP NOT NULL,
             update_time TIMESTAMP,
             new_data_available BOOLEAN NOT NULL DEFAULT 0,
             files_added INTEGER NOT NULL DEFAULT 0
-        )''')
+        )""")
 
         conn.commit()
         conn.close()
@@ -148,3 +149,12 @@ def process_and_store_excel_files():
     except Exception as e:
         logger.error(f"Error processing and storing Excel files: {str(e)}")
         return False
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+if __name__ == "__main__":
+    init_db()
+    process_and_store_excel_files()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
