@@ -1,0 +1,7 @@
+# Ignore downloaded data and logs
+RBI_ATM_Excel/
+Processed_Data/
+__pycache__/
+*.log
+pipeline_output.txt
+update_status.json

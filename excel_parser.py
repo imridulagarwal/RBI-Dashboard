@@ -42,11 +42,18 @@ class RBIExcelParser:
     
     def extract_date_from_filename(self, filename):
         """Extract month and year from filename"""
-        # Extract month name and year using regex
-        match = re.search(r'ATM(\w+)(\d{4})', os.path.basename(filename))
+        # Extract month name and year using regex (handles 2 or 4 digit years)
+        match = re.search(r'ATM([A-Za-z]+)(\d{2,4})', os.path.basename(filename))
         if match:
             month_name = match.group(1)
-            year = match.group(2)
+            year_str = match.group(2)
+
+            # Convert 2 digit year to 4 digit year
+            if len(year_str) == 2:
+                year = int(year_str)
+                year += 2000 if year < 100 else 0
+            else:
+                year = int(year_str)
             
             # Convert month name to number
             try:

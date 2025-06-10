@@ -95,8 +95,22 @@ def calculate_mom_growth(df, value_col):
     result = df.copy()
     result['previous'] = result.groupby('bank_name')[value_col].shift(1)
     result['growth'] = ((result[value_col] - result['previous']) / result['previous'] * 100).round(2)
-    
+
     return result
+
+def get_latest_card_summary():
+    """Return latest month's credit and debit card counts by bank."""
+    if data['all_data'] is None:
+        load_data()
+    if data['all_data'] is None or data['all_data'].empty:
+        return None, pd.DataFrame()
+
+    df = data['all_data']
+    latest_month = df['month'].max()
+    month_str = df[df['month'] == latest_month]['month_str'].iloc[0]
+    summary = df[df['month'] == latest_month][['bank_name', 'credit_cards', 'debit_cards']]
+    summary = summary.sort_values('bank_name')
+    return month_str, summary
 
 def check_for_updates():
     """Check if new data is available from RBI website"""
@@ -277,6 +291,14 @@ def refresh_data():
         'success': success,
         'last_updated': data['last_updated'] if success else None
     })
+
+@app.route('/card_summary')
+def card_summary():
+    """Render a simple table of credit and debit cards by bank for latest month."""
+    month_str, summary = get_latest_card_summary()
+    if summary.empty:
+        return "No data available", 404
+    return render_template('card_summary.html', month=month_str, data=summary.to_dict(orient='records'))
 
 if __name__ == '__main__':
     # Load data on startup
